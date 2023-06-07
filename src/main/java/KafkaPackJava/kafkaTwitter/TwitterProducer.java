@@ -24,10 +24,10 @@ import java.util.concurrent.TimeUnit;
 
 public class TwitterProducer {
     Logger logger= LoggerFactory.getLogger(TwitterProducer.class.getName());
-    private String consumerKey="5cFCN1atr1zVvPX9g3tETRfTK";
-    private String consumerSecret="XsxnX58yNeddDWKyWwIY4mv0aQp2nhq8Jt9ZQrFvzGErOVIoEj";
-    private String token="976176812052107264-o0oT43H3d48Mp0W0MNq5PZqZUTFjXTI";
-    private String secret="9xxC9ISWU0IoTbnHjEDh7cqELbkDH5n0S3Y7DA0BYPSQ4";
+    private String consumerKey="";
+    private String consumerSecret="";
+    private String token="";
+    private String secret="";
     private String boostrapServers = "127.0.0.1:9092";
     public TwitterProducer(){
 
@@ -109,6 +109,11 @@ public class TwitterProducer {
         properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, boostrapServers );
         properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName() );
+        //configure properties to safe Prodгсer
+        properties.setProperty(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG,"true");
+        properties.setProperty(ProducerConfig.ACKS_CONFIG,"all");
+        properties.setProperty(ProducerConfig.RETRIES_CONFIG, Integer.toString(Integer.MAX_VALUE));
+        properties.setProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "5");
 
 
         KafkaProducer<String,String> producer = new KafkaProducer<String,String>(properties);
