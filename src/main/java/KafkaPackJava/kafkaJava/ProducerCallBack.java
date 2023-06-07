@@ -1,4 +1,4 @@
-package KafkaPackJava;
+package KafkaPackJava.kafkaJava;
 
 import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.serialization.StringSerializer;
