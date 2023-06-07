@@ -11,10 +11,13 @@ import com.twitter.hbc.core.endpoint.StatusesFilterEndpoint;
 import com.twitter.hbc.core.processor.StringDelimitedProcessor;
 import com.twitter.hbc.httpclient.auth.Authentication;
 import com.twitter.hbc.httpclient.auth.OAuth1;
+import org.apache.kafka.clients.producer.*;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -25,6 +28,7 @@ public class TwitterProducer {
     private String consumerSecret="XsxnX58yNeddDWKyWwIY4mv0aQp2nhq8Jt9ZQrFvzGErOVIoEj";
     private String token="976176812052107264-o0oT43H3d48Mp0W0MNq5PZqZUTFjXTI";
     private String secret="9xxC9ISWU0IoTbnHjEDh7cqELbkDH5n0S3Y7DA0BYPSQ4";
+    private String boostrapServers = "127.0.0.1:9092";
     public TwitterProducer(){
 
     }
@@ -35,6 +39,19 @@ public class TwitterProducer {
         Client client = createTwitterClient(msgQueue);
         // Attempts to establish a connection.
         client.connect();
+
+        // Create a kafka producer
+        KafkaProducer<String, String>producer=createKafkaProducer();
+
+        //Add shutdown hook
+        Runtime.getRuntime().addShutdownHook(new Thread(()->{
+            logger.info("Stopping application...");
+            logger.info("Shutting down client from twitter...");
+            client.stop();
+            logger.info("closing producer...");
+            producer.close();
+            logger.info("Done!");
+        }));
         // on a different thread, or multiple different threads....
         while (!client.isDone()) {
             String msg = null;
@@ -46,6 +63,14 @@ public class TwitterProducer {
             }
             if (msg != null) {
                 logger.info(msg);
+                producer.send(new ProducerRecord<>("twitter_tweets" ,null, msg),new Callback(){
+                    @Override
+                    public void onCompletion(RecordMetadata metadata, Exception exception) {
+                        if(exception!=null){
+                            logger.error("Something bad happened",exception);
+                        }
+                    }
+                } );
             }
             logger.info("End of application");
         }
@@ -76,6 +101,18 @@ public class TwitterProducer {
         Client hosebirdClient = builder.build();
 
         return hosebirdClient;
+    }
+
+    public KafkaProducer<String,String> createKafkaProducer(){
+
+        Properties properties = new Properties();
+        properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, boostrapServers );
+        properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName() );
+
+
+        KafkaProducer<String,String> producer = new KafkaProducer<String,String>(properties);
+        return producer;
     }
 
 
