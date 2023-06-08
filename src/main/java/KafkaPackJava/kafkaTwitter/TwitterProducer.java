@@ -12,12 +12,10 @@ import com.twitter.hbc.core.processor.StringDelimitedProcessor;
 import com.twitter.hbc.httpclient.auth.Authentication;
 import com.twitter.hbc.httpclient.auth.OAuth1;
 import org.apache.kafka.clients.producer.*;
-import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -28,7 +26,7 @@ public class TwitterProducer {
     private String consumerSecret="";
     private String token="";
     private String secret="";
-    private String boostrapServers = "127.0.0.1:9092";
+    private KafkaProducerConfig  kafkaProducerConfig = new KafkaProducerConfig();
     public TwitterProducer(){
 
     }
@@ -41,7 +39,7 @@ public class TwitterProducer {
         client.connect();
 
         // Create a kafka producer
-        KafkaProducer<String, String>producer=createKafkaProducer();
+        KafkaProducer<String, String>producer=kafkaProducerConfig.createKafkaProducer();
 
         //Add shutdown hook
         Runtime.getRuntime().addShutdownHook(new Thread(()->{
@@ -102,27 +100,5 @@ public class TwitterProducer {
 
         return hosebirdClient;
     }
-
-    public KafkaProducer<String,String> createKafkaProducer(){
-
-        Properties properties = new Properties();
-        properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, boostrapServers );
-        properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName() );
-        //configure properties to safe Producer
-        properties.setProperty(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG,"true");
-        properties.setProperty(ProducerConfig.ACKS_CONFIG,"all");
-        properties.setProperty(ProducerConfig.RETRIES_CONFIG, Integer.toString(Integer.MAX_VALUE));
-        properties.setProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "5");
-        //high throughput producer (at the expense of a bit of latency and CPU usage)
-        properties.setProperty(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
-        properties.setProperty(ProducerConfig.LINGER_MS_CONFIG,"20");
-        properties.setProperty(ProducerConfig.BATCH_SIZE_CONFIG,Integer.toString(32*1024)); //32kb batch size
-
-
-        KafkaProducer<String,String> producer = new KafkaProducer<String,String>(properties);
-        return producer;
-    }
-
 
 }
